@@ -1,0 +1,46 @@
+// This is your Prisma schema file
+datasource db {
+  provider = "sqlite"
+  url      = "file:./dev.db"
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+model User {
+  id            String    @id @default(cuid())
+  name          String?
+  email         String    @unique
+  password      String
+  createdEvents Event[]   @relation("CreatedEvents")
+  comments      Comment[] @relation("UserComments")
+  favorites     Event[]   @relation("UserFavorites")
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+}
+
+model Event {
+  id          String    @id @default(cuid())
+  title       String
+  description String
+  date        DateTime
+  location    String
+  createdBy   User      @relation("CreatedEvents", fields: [userId], references: [id])
+  userId      String
+  comments    Comment[] @relation("EventComments")
+  favoritedBy User[]    @relation("UserFavorites")
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+}
+
+model Comment {
+  id        String   @id @default(cuid())
+  content   String
+  event     Event    @relation("EventComments", fields: [eventId], references: [id])
+  eventId   String
+  user      User     @relation("UserComments", fields: [userId], references: [id])
+  userId    String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
