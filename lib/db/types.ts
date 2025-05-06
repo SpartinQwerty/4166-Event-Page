@@ -1,9 +1,9 @@
 import { Generated } from "kysely";
 
 export type Database = {
-    account: AccountType;
-    event: EventType;
-    game: GameType;
+    accounts: AccountType;
+    events: EventType;
+    games: GameType;
     location: LocationType;
 }
 
@@ -26,7 +26,7 @@ export type EventType = {
 
 export type GameType = {
     gameId : Generated<number>;
-    gameTitle: string;
+    title: string;
     description: string;
 }
 
