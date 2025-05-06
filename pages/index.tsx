@@ -4,6 +4,9 @@ import { prisma } from '../lib/prisma';
 import { Event } from '@prisma/client';
 import Link from 'next/link';
 import { useSession } from 'next-auth/react';
+import { db } from '../lib/db/db';
+
+
 
 interface HomeProps {
   events: Event[];
@@ -11,7 +14,6 @@ interface HomeProps {
 
 export default function Home({ events }: HomeProps) {
   const { data: session } = useSession();
-
   return (
     <Container maxW="container.xl" py={8}>
       <Box mb={6} display="flex" justifyContent="space-between" alignItems="center">
@@ -77,6 +79,7 @@ export default function Home({ events }: HomeProps) {
 }
 
 export const getServerSideProps: GetServerSideProps = async () => {
+  console.log(db);
   try {
     const events = await prisma.event.findMany({
       orderBy: {
