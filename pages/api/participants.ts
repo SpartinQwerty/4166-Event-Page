@@ -108,7 +108,8 @@ async function handleJoinEvent(req: NextApiRequest, res: NextApiResponse, sessio
           username: userEmail,
           password: 'temppassword', // This should be properly handled in a real app
           firstName: userName?.split(' ')[0] || 'User',
-          lastName: userName?.split(' ')[1] || 'User'
+          lastName: userName?.split(' ')[1] || 'User',
+          email: userEmail
         })
         .returning(['id', 'username'])
         .executeTakeFirst();
