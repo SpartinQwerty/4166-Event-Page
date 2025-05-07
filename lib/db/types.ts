@@ -20,6 +20,7 @@ export type EventType = {
     hostId: number;
     gameId: number;
     locationId: number;
+    date: Date;
     title: string;
     description: string;
 }

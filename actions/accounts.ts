@@ -13,18 +13,18 @@ export type Account = {
 
 export async function getAllAccounts(): Promise<Account[]> {
     const accounts = await db
-    .selectFrom('accounts')
-    .select(['accountId', 'userName','password','firstName', 'lastName'])
-    .execute();
+        .selectFrom('accounts')
+        .select(['accountId', 'userName','password','firstName', 'lastName'])
+        .execute();
     return accounts;
 }
 
 export async function getAccount(accountId: number): Promise<Account> {
     const account = await db
-    .selectFrom('accounts')
-    .select(['accountId', 'userName', 'password', 'firstName', 'lastName'])
-    .where('accountId', '=', accountId)
-    .executeTakeFirstOrThrow();
+        .selectFrom('accounts')
+        .select(['accountId', 'userName', 'password', 'firstName', 'lastName'])
+        .where('accountId', '=', accountId)
+        .executeTakeFirstOrThrow();
     return account;
 }
 

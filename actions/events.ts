@@ -12,6 +12,7 @@ export type Event = {
     locationId: number;
     title: string;
     description: string;
+    date: Date;
 }
 
 export type EventInfo = {
@@ -22,6 +23,7 @@ export type EventInfo = {
     game: Game;
     location: Location;
     author: Omit<Account, 'password'>;
+    date: Date;
 }
 
 export type EventDisplay = {
@@ -34,12 +36,13 @@ export type EventDisplay = {
     author: string | undefined;
     game: string | undefined;
     address: string | undefined;
+    date: Date;
 }
 
 export async function getAllEvents(): Promise<EventDisplay[]> {
     const events = await db
         .selectFrom("events")
-        .select(['eventId', 'hostId', 'gameId', 'locationId', 'title', 'description'])
+        .select(['eventId','date', 'hostId', 'gameId', 'locationId', 'title', 'description'])
         .execute()
     const account = await db
         .selectFrom('accounts')
@@ -65,14 +68,13 @@ export async function getAllEvents(): Promise<EventDisplay[]> {
             address: locationAddy?.address,
         })
     }
-
     return allEvents;
 }
 
 export async function getOneEvent(eId: number): Promise<EventInfo> {
     const events = await db
         .selectFrom("events")
-        .select(['eventId', 'hostId', 'gameId', 'locationId', 'title', 'description'])
+        .select(['eventId', 'date', 'hostId', 'gameId', 'locationId', 'title', 'description'])
         .where('eventId', '=', eId)
         .executeTakeFirstOrThrow();
     const account = await db
@@ -106,8 +108,8 @@ export async function createEvent(event: Omit<Event, 'eventId'>): Promise<Event>
             .insertInto('events')
             .columns(['gameId', 'hostId', 'locationId', 'title', 'description'])
             .values({gameId: event.gameId, hostId: event.hostId, locationId: event.locationId, 
-                title: event.title, description: event.description})
-            .returning(['eventId', 'hostId', 'locationId', 'gameId', 'title', 'description'])
+                title: event.title, description: event.description, date: event.date})
+            .returning(['eventId', 'date', 'hostId', 'locationId', 'gameId', 'title', 'description'])
             .executeTakeFirstOrThrow();
         return cEvent;
     })
@@ -119,7 +121,7 @@ export async function removeEvent(eId: number): Promise<Event> {
         const event = await trx
         .deleteFrom('events')
         .where('eventId', '=', eId)
-        .returning(['eventId', 'hostId', 'gameId', 'locationId', 'title', 'description'])
+        .returning(['eventId', 'hostId', 'date', 'gameId', 'locationId', 'title', 'description'])
         .executeTakeFirstOrThrow();
         return event;
     });

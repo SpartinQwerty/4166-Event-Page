@@ -29,6 +29,7 @@ export async function up (db: Kysely<any>): Promise<void> {
     .addColumn('locationId', 'integer', (col) => col.references('location.id').onDelete('cascade').notNull())
     .addColumn('title', 'text', (col) => col.notNull())
     .addColumn('description', 'text', (col) => col.notNull())
+    .addColumn('date', 'date', (col) => col.notNull())
     .execute();
 }
 
