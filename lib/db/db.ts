@@ -5,9 +5,9 @@ import { Database } from './types';
 const dialect = new PostgresDialect({
     pool: new pg.Pool({
         database: process.env.DB_NAME,
-        host: process.env.DB_HOST,
-        user: process.env.DB_USER,
-        password: process.env.DB_PASS, 
+        host: 'localhost',
+        user: 'postgres',
+        password: 'postgres', 
         port: Number(process.env.DB_PORT),
         max: 10
     })

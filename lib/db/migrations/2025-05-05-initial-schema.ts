@@ -18,8 +18,6 @@ export async function up (db: Kysely<any>): Promise<void> {
     await db.schema.createTable('location')
     .addColumn('id', 'serial', (col) => col.primaryKey().unique())
     .addColumn('address', 'text', (col) => col.notNull())
-    .addColumn('latitude', 'integer', (col) => col.notNull())
-    .addColumn('longitude', 'integer', (col) => col.notNull())
     .execute();
 
     await db.schema.createTable('events')

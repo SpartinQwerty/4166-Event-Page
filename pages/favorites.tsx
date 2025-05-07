@@ -6,6 +6,7 @@ import { CalendarIcon, TimeIcon, InfoIcon, StarIcon } from '@chakra-ui/icons';
 import { useRouter } from 'next/router';
 import EventCard from '../components/EventCard';
 import { useState, useEffect } from 'react';
+import { getAllEvents } from '../actions/events';
 
 interface FavoriteEvent {
   favoriteId: number;
