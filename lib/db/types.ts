@@ -3,20 +3,20 @@ import { Generated } from "kysely";
 export type Database = {
     accounts: AccountType;
     events: EventType;
-    games: GameType;
+    game: GameType;
     location: LocationType;
 }
 
 export type AccountType = {
-    accountId: Generated<number>;
-    userName: string;
+    id: Generated<number>;
+    username: string;
     password: string;
     firstName: string;
     lastName: string;
 }
 
 export type EventType = {
-    eventId: Generated<number>;
+    id: Generated<number>;
     hostId: number;
     gameId: number;
     locationId: number;
@@ -26,13 +26,13 @@ export type EventType = {
 }
 
 export type GameType = {
-    gameId : Generated<number>;
+    id : Generated<number>;
     title: string;
     description: string;
 }
 
 export type LocationType = {
-    locationId: Generated<number>;
+    id: Generated<number>;
     address: string;
     latitude: number;
     longitude: number;

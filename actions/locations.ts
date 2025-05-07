@@ -1,9 +1,8 @@
-"use server";
 
 import { db } from "../lib/db/db"
 
 export type Location = {
-    locationId: number;
+    id: number;
     address: string;
     latitude: number;
     longitude: number;
@@ -12,19 +11,19 @@ export type Location = {
 export async function getLocation(lId: number): Promise<Location> {
     const location = await db
         .selectFrom('location')
-        .select(['locationId', 'address', 'latitude', 'longitude'])
-        .where('locationId', '=', lId)
+        .select(['id', 'address', 'latitude', 'longitude'])
+        .where('id', '=', lId)
         .executeTakeFirstOrThrow();
     return location;
 }
 
-export async function createLocation(location: Omit<Location, 'locationId'>): Promise<Location> {
+export async function createLocation(location: Omit<Location, 'id'>): Promise<Location> {
     const createdLocation = await db.transaction().execute(async (trx) => {
         const locale = await trx
             .insertInto('location')
             .columns(['address','latitude','latitude','longitude'])
             .values({address: location.address, latitude: location.latitude, longitude: location.longitude})
-            .returning(['locationId', 'address', 'latitude', 'longitude'])
+            .returning(['id', 'address', 'latitude', 'longitude'])
             .executeTakeFirstOrThrow();
         return locale;
     });
@@ -32,13 +31,13 @@ export async function createLocation(location: Omit<Location, 'locationId'>): Pr
     return createdLocation;
 }
 
-export async function updateLocation(lId: number, update: Omit<Location, 'locationId'>): Promise<Location | undefined>{
+export async function updateLocation(lId: number, update: Omit<Location, 'id'>): Promise<Location | undefined>{
     const updatedLocation = await db.transaction().execute(async (trx) => {
         const locale = await trx
             .updateTable('location')
             .set({address: update.address, latitude: update.latitude, longitude: update.longitude})
-            .where('locationId', '=', lId)
-            .returning(['locationId','address','latitude','longitude'])
+            .where('id', '=', lId)
+            .returning(['id','address','latitude','longitude'])
             .executeTakeFirst();
         return locale;
     });
@@ -49,8 +48,8 @@ export async function deleteLocation(lId:number): Promise<Location> {
     const deletedLocation = await db.transaction().execute(async (trx) => {
         const locale = await trx
             .deleteFrom('location')
-            .where('locationId', '=', lId)
-            .returning(['locationId','address','latitude','longitude'])
+            .where('id', '=', lId)
+            .returning(['id','address','latitude','longitude'])
             .executeTakeFirstOrThrow();
         return locale;
     });
