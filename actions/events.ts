@@ -47,7 +47,7 @@ export async function getAllEvents(): Promise<EventDisplay[]> {
         .select(['id', 'firstName', 'lastName', 'username'])
         .execute();
     const games = await db
-        .selectFrom('games')
+        .selectFrom('game')
         .select(['id','title', 'description'])
         .execute();
     const locations = await db
@@ -81,7 +81,7 @@ export async function getOneEvent(eId: number): Promise<EventInfo> {
         .where('id', '=', events.hostId)
         .executeTakeFirstOrThrow();
     const games = await db
-        .selectFrom('games')
+        .selectFrom('game')
         .select(['id','title', 'description'])
         .where('id', '=', events.gameId)
         .executeTakeFirstOrThrow();
@@ -114,7 +114,7 @@ export async function createEvent(event: Omit<Event, 'id'>): Promise<Event> {
     return createdEvent;
 }
 
-export async function removeEvent(eId: number): Promise<Event> {
+export async function deleteEvent(eId: number): Promise<Event> {
     const deletedEvent = await db.transaction().execute(async (trx) => {
         const event = await trx
         .deleteFrom('events')
@@ -124,4 +124,20 @@ export async function removeEvent(eId: number): Promise<Event> {
         return event;
     });
     return deletedEvent;
+}
+
+export async function updateEvent(update: Event): Promise<Event> {
+    const updatedEvent = await db.transaction().execute(async (trx) => {
+        const event = await trx
+            .updateTable('events')
+            .set({hostId: update.hostId, gameId: update.gameId,
+                locationId: update.locationId, title: update.title,
+                description: update.description, date: update.date
+            })
+            .where('id', '=', update.id)
+            .returningAll()
+            .executeTakeFirstOrThrow();
+        return event;
+    })
+    return updatedEvent;
 }

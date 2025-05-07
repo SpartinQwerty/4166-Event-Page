@@ -1,127 +1,62 @@
 import { NextApiRequest, NextApiResponse } from 'next';
 import { getSession } from 'next-auth/react';
 import { prisma } from '../../lib/prisma';
+import { deleteEvent, getAllEvents, getOneEvent, updateEvent, Event } from '../../actions/events';
 
 export default async function handler(
-  req: NextApiRequest,
-  res: NextApiResponse
-) {
-  const session = await getSession({ req });
-
-  if (!session?.user?.id) {
-    return res.status(401).json({ message: 'Unauthorized' });
-  }
-
-  switch (req.method) {
-    case 'POST':
-      return handlePost(req, res, session.user.id);
-    case 'PUT':
-      return handlePut(req, res, session.user.id);
-    case 'DELETE':
-      return handleDelete(req, res, session.user.id);
-    default:
-      return res.status(405).json({ message: 'Method not allowed' });
-  }
-}
-
-async function handlePost(
-  req: NextApiRequest,
-  res: NextApiResponse,
-  userId: string
-) {
-  try {
-    const { title, description, date, location } = req.body;
-
-    if (!title || !description || !date || !location) {
-      return res.status(400).json({ message: 'Missing required fields' });
+    req: NextApiRequest,
+    res: NextApiResponse) {
+  if (req.method === 'GET') {
+    try {
+      const {id} = req.body;
+      if (!id) {
+        const events = await getAllEvents();
+        res.status(200).json({events});
+      } else {
+        const event = await getOneEvent(id);
+        res.status(200).json(event);
+      }
+    } catch (e) {
+      res.status(500).json({message: `Error in GET: ${e}`});
     }
-
-    const event = await prisma.event.create({
-      data: {
-        title,
-        description,
-        date: new Date(date),
-        location,
-        userId,
-      },
-    });
-
-    return res.status(200).json(event);
-  } catch (error: any) {
-    return res.status(500).json({ message: error.message });
-  }
-}
-
-async function handlePut(
-  req: NextApiRequest,
-  res: NextApiResponse,
-  userId: string
-) {
-  try {
-    const { id, title, description, date, location } = req.body;
-
-    if (!id || !title || !description || !date || !location) {
-      return res.status(400).json({ message: 'Missing required fields' });
+  } else if (req.method === 'POST') {
+      try {
+        
+      } catch (e) {
+        res.status(500).json({message: `Error in POST: ${e}`});
+      }
+  } else if (req.method === 'DELETE') {
+      try {
+        const {id} = req.body;
+        if (!id) {
+          res.status(400).json({message: 'missing id to DELETE'})
+        }
+        const event = await deleteEvent(id);
+        res.status(200).json(event);
+    } catch (e) {
+      res.status(500).json({message: `Error in DELETE: ${e}`});
     }
-
-    const event = await prisma.event.findUnique({
-      where: { id },
-    });
-
-    if (!event) {
-      return res.status(404).json({ message: 'Event not found' });
+  } else if (req.method === 'PUT') {
+      try {
+        const {id, hostId, gameId, locationId, title, description, date} = req.body;
+        if(!id) {
+          res.status(400).json({message: 'missing id to PUT'})
+        }
+        const evnt: Event = {
+          id: id,
+          hostId: hostId,
+          gameId: gameId,
+          locationId: locationId,
+          title: title,
+          description: description,
+          date: date
+        }
+        const event = await updateEvent(evnt);
+        res.status(200).json(event);
+    } catch (e) {
+      res.status(500).json({message: `Error in PUT: ${e}`});
     }
-
-    if (event.userId !== userId) {
-      return res.status(403).json({ message: 'Not authorized to update this event' });
-    }
-
-    const updatedEvent = await prisma.event.update({
-      where: { id },
-      data: {
-        title,
-        description,
-        date: new Date(date),
-        location,
-      },
-    });
-
-    return res.status(200).json(updatedEvent);
-  } catch (error: any) {
-    return res.status(500).json({ message: error.message });
-  }
-}
-
-async function handleDelete(
-  req: NextApiRequest,
-  res: NextApiResponse,
-  userId: string
-) {
-  try {
-    const { id } = req.query;
-
-    if (!id || typeof id !== 'string') {
-      return res.status(400).json({ message: 'Missing event ID' });
-    }
-
-    const event = await prisma.event.findUnique({
-      where: { id },
-    });
-
-    if (!event) {
-      return res.status(404).json({ message: 'Event not found' });
-    }
-
-    if (event.userId !== userId) {
-      return res.status(403).json({ message: 'Not authorized to delete this event' });
-    }
-
-    await prisma.event.delete({
-      where: { id },
-    });
-
-    return res.status(200).json({ message: 'Event deleted successfully' });
-  } catch (error: any) {
-    return res.status(500).json({ message: error.message });
+  } else {
+    res.status(405).json({message: 'da fuc dewd'});
   }
 }
