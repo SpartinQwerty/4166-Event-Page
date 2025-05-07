@@ -18,8 +18,6 @@ export default async function handler(
       .insertInto('location')
       .values({
         address: 'Test Address',
-        latitude: 35,  // Integer value
-        longitude: -80 // Integer value
       })
       .execute();
 
