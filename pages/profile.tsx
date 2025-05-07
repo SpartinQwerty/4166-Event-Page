@@ -22,7 +22,7 @@ import {
 } from '@chakra-ui/react';
 import { GetServerSideProps } from 'next';
 import Link from 'next/link';
-import { useSession, getSession } from 'next-auth/react';
+import { useSession, getSession, signOut } from 'next-auth/react';
 import { CalendarIcon, TimeIcon, InfoIcon, EditIcon } from '@chakra-ui/icons';
 import { EventDisplay } from '../actions/events';
 import { getAllEvents } from '../actions/events';
@@ -46,6 +46,7 @@ export default function ProfilePage({ hostedEvents, joinedEvents }: ProfilePageP
   const [confirmPassword, setConfirmPassword] = useState('');
   const [isEditing, setIsEditing] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
   const [passwordError, setPasswordError] = useState('');
   
   // Redirect to login if not authenticated
@@ -76,6 +77,47 @@ export default function ProfilePage({ hostedEvents, joinedEvents }: ProfilePageP
     });
   };
 
+  const handleDeleteAccount = async () => {
+    if (window.confirm('Are you sure you want to delete your account? This action cannot be undone.')) {
+      setIsDeleting(true);
+      try {
+        // Make API call to delete account
+        const response = await fetch('/api/user/delete-account', {
+          method: 'DELETE',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+        });
+        
+        if (!response.ok) {
+          const data = await response.json();
+          throw new Error(data.message || 'Failed to delete account');
+        }
+        
+        // Sign out the user and redirect to home page
+        signOut({ callbackUrl: '/' });
+        
+        toast({
+          title: 'Account deleted',
+          description: 'Your account has been successfully deleted',
+          status: 'success',
+          duration: 3000,
+          isClosable: true,
+        });
+      } catch (error: any) {
+        toast({
+          title: 'Deletion failed',
+          description: error.message || 'Failed to delete account',
+          status: 'error',
+          duration: 5000,
+          isClosable: true,
+        });
+      } finally {
+        setIsDeleting(false);
+      }
+    }
+  };
+  
   const handleProfileUpdate = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
@@ -240,20 +282,32 @@ export default function ProfilePage({ hostedEvents, joinedEvents }: ProfilePageP
               </FormControl>
             </SimpleGrid>
             
-            <Flex mt={6} gap={4} justifyContent="flex-end">
+            <Flex mt={6} gap={4} justifyContent="space-between">
               <Button 
                 variant="outline" 
-                onClick={() => setIsEditing(false)}
+                colorScheme="red"
+                onClick={handleDeleteAccount}
+                isLoading={isDeleting}
+                leftIcon={<InfoIcon />}
               >
-                Cancel
+                Delete Account
               </Button>
-              <Button 
-                type="submit" 
-                colorScheme="primary"
-                isLoading={isLoading}
-              >
-                Save Changes
-              </Button>
+              
+              <Flex gap={4}>
+                <Button 
+                  variant="outline" 
+                  onClick={() => setIsEditing(false)}
+                >
+                  Cancel
+                </Button>
+                <Button 
+                  type="submit" 
+                  colorScheme="primary"
+                  isLoading={isLoading}
+                >
+                  Save Changes
+                </Button>
+              </Flex>
             </Flex>
           </Box>
         ) : (

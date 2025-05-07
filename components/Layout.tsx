@@ -18,10 +18,16 @@ import { SearchIcon, StarIcon, CalendarIcon, TimeIcon } from '@chakra-ui/icons';
 import Link from 'next/link';
 import { useSession, signOut } from 'next-auth/react';
 import { useState } from 'react';
+import { useAdmin } from '../hooks/useAdmin';
 
 export default function Layout({ children }: { children: React.ReactNode }) {
   const { data: session } = useSession();
+  const { isAdmin } = useAdmin();
   const [searchQuery, setSearchQuery] = useState('');
+  
+  // Debug session data
+  console.log('Session data:', session);
+  console.log('Is admin:', isAdmin);
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
@@ -84,6 +90,20 @@ export default function Layout({ children }: { children: React.ReactNode }) {
                       Create Event
                     </ChakraLink>
                   </Link>
+                  
+                  {/* Admin Button - Only visible to admin users */}
+                  {isAdmin && (
+                    <Link href="/admin" passHref>
+                      <Button
+                        colorScheme="red"
+                        size="sm"
+                        leftIcon={<Icon as={StarIcon} />}
+                        _hover={{ bg: 'red.600' }}
+                      >
+                        Admin
+                      </Button>
+                    </Link>
+                  )}
                   <Menu>
                     <MenuButton
                       as={Button}
@@ -105,7 +125,12 @@ export default function Layout({ children }: { children: React.ReactNode }) {
                           My Favorites
                         </MenuItem>
                       </Link>
-                      <MenuItem onClick={() => signOut({ callbackUrl: '/' })}>
+                      <MenuItem onClick={() => {
+                        signOut({ 
+                          callbackUrl: '/events',
+                          redirect: true
+                        });
+                      }}>
                         Sign Out
                       </MenuItem>
                     </MenuList>

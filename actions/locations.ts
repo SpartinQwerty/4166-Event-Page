@@ -17,6 +17,14 @@ export async function getLocation(lId: number): Promise<Location> {
     return location;
 }
 
+export async function getAllLocations(): Promise<Location[]> {
+    const locations = await db
+        .selectFrom('location')
+        .select(['id', 'address', 'latitude', 'longitude'])
+        .execute();
+    return locations;
+}
+
 export async function createLocation(location: Omit<Location, 'id'>): Promise<Location> {
     try {
         // Simplified direct query

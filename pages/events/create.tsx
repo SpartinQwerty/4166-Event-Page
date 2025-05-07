@@ -12,11 +12,11 @@ import {
   Select,
   Text,
   Divider,
+  Spinner,
 } from '@chakra-ui/react';
 import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/router';
 import { useState, useEffect } from 'react';
-import MapComponent from '../../components/GoogleMap';
 import { Game } from '../../actions/games';
 import { Location } from '../../actions/locations';
 
@@ -24,32 +24,58 @@ export default function CreateEvent() {
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [date, setDate] = useState('');
-  const [game, setGame] = useState('');
-  const [location, setLocation] = useState<{ lat: number; lng: number; address: string } | null>(null);
+  const [gameId, setGameId] = useState('');
+  const [locationId, setLocationId] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [isFetching, setIsFetching] = useState(true);
+  const [games, setGames] = useState<Game[]>([]);
+  const [locations, setLocations] = useState<Location[]>([]);
   
   const router = useRouter();
   const toast = useToast();
   const { data: session } = useSession();
 
-
+  // Fetch games and locations when component mounts
+  useEffect(() => {
+    const fetchOptions = async () => {
+      try {
+        const response = await fetch('/api/get-options');
+        if (!response.ok) {
+          throw new Error('Failed to fetch options');
+        }
+        
+        const data = await response.json();
+        setGames(data.games || []);
+        setLocations(data.locations || []);
+      } catch (error) {
+        console.error('Error fetching options:', error);
+        toast({
+          title: 'Error',
+          description: 'Failed to load games and locations',
+          status: 'error',
+          duration: 3000,
+          isClosable: true,
+        });
+      } finally {
+        setIsFetching(false);
+      }
+    };
+    
+    fetchOptions();
+  }, [toast]);
 
   if (!session) {
     router.push('/auth/signin');
     return null;
   }
 
-  const handleLocationSelect = (selectedLocation: { lat: number; lng: number; address: string }) => {
-    setLocation(selectedLocation);
-  };
-
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!location) {
+    if (!locationId) {
       toast({
         title: 'Missing location',
-        description: 'Please select a location on the map',
+        description: 'Please select a location for this event',
         status: 'error',
         duration: 3000,
         isClosable: true,
@@ -57,10 +83,10 @@ export default function CreateEvent() {
       return;
     }
 
-    if (!game.trim()) {
+    if (!gameId) {
       toast({
         title: 'Missing game',
-        description: 'Please enter a game for this event',
+        description: 'Please select a game for this event',
         status: 'error',
         duration: 3000,
         isClosable: true,
@@ -71,7 +97,7 @@ export default function CreateEvent() {
     setIsLoading(true);
     
     try {
-      // Use the simplified API endpoint to create both location and event in one call
+      // Use the simplified API endpoint to create the event
       const response = await fetch('/api/simple-event', {
         method: 'POST',
         headers: {
@@ -81,8 +107,8 @@ export default function CreateEvent() {
           title,
           description,
           date,
-          game,
-          location
+          gameId: parseInt(gameId),
+          locationId: parseInt(locationId)
         }),
       });
 
@@ -158,22 +184,44 @@ export default function CreateEvent() {
                 
                 <FormControl isRequired>
                   <FormLabel className="text-gray-700 font-medium">Game</FormLabel>
-                  <Input
-                    value={game}
-                    onChange={(e) => setGame(e.target.value)}
-                    className="form-input"
-                    placeholder="Enter the game name (e.g., Dungeons & Dragons, Magic: The Gathering)"
-                  />
+                  {isFetching ? (
+                    <Spinner size="sm" />
+                  ) : (
+                    <Select
+                      value={gameId}
+                      onChange={(e) => setGameId(e.target.value)}
+                      placeholder="Select a game"
+                      className="form-select"
+                    >
+                      {games.map((game) => (
+                        <option key={game.id} value={game.id}>
+                          {game.title}
+                        </option>
+                      ))}
+                    </Select>
+                  )}
                 </FormControl>
               </div>
               
               <div className="space-y-4">
                 <FormControl isRequired>
                   <FormLabel className="text-gray-700 font-medium">Location</FormLabel>
-                  <Text fontSize="sm" color="gray.600" mb={2}>
-                    Click on the map to select a location
-                  </Text>
-                  <MapComponent onLocationSelect={handleLocationSelect} />
+                  {isFetching ? (
+                    <Spinner size="sm" />
+                  ) : (
+                    <Select
+                      value={locationId}
+                      onChange={(e) => setLocationId(e.target.value)}
+                      placeholder="Select a location"
+                      className="form-select"
+                    >
+                      {locations.map((location) => (
+                        <option key={location.id} value={location.id}>
+                          {location.address}
+                        </option>
+                      ))}
+                    </Select>
+                  )}
                 </FormControl>
               </div>
             </div>

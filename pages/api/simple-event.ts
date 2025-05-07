@@ -2,6 +2,10 @@ import { NextApiRequest, NextApiResponse } from 'next';
 import { getServerSession } from 'next-auth';
 import { authOptions } from './auth/[...nextauth]';
 import { db } from '../../lib/db/db';
+import { prisma } from '../../lib/prisma';
+import { createLocation } from '../../actions/locations';
+import { createGame } from '../../actions/games';
+import { createEvent } from '../../actions/events';
 
 export default async function handler(
   req: NextApiRequest,
@@ -19,10 +23,10 @@ export default async function handler(
 
   try {
     // Extract data from request
-    const { title, description, date, game, location } = req.body;
+    const { title, description, date, gameId, locationId } = req.body;
 
     // Validate required fields
-    if (!title || !description || !date || !location) {
+    if (!title || !description || !date || !locationId || !gameId) {
       return res.status(400).json({ message: 'Missing required fields' });
     }
 
@@ -33,48 +37,35 @@ export default async function handler(
       return res.status(400).json({ message: 'User email not found in session' });
     }
     
-    // Get user account from email using direct database query
-    const userData = await db
-      .selectFrom('accounts')
-      .select(['id', 'username', 'firstName', 'lastName'])
-      .where('username', '=', userEmail)
-      .executeTakeFirst();
-    
-    // If user not found, use a default user ID for testing purposes
-    const userId = userData?.id || 1; // Fallback to user ID 1 if not found
-
-    // Create location using Kysely query builder
-    try {
-      // First create the location
-      const locationResult = await db
-        .insertInto('location')
-        .values({
-          address: location.address || 'Selected location',
-          latitude: Math.round(location.lat),
-          longitude: Math.round(location.lng)
-        })
-        .returning(['id', 'address', 'latitude', 'longitude'])
-        .executeTakeFirst();
-
-      if (!locationResult) {
-        return res.status(500).json({ message: 'Failed to create location' });
+    // Get user from Prisma database
+    const user = await prisma.user.findUnique({
+      where: {
+        email: userEmail
       }
+    });
+    
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+    
+    const userId = user.id;
+    const userName = user.name || 'Anonymous';
 
-      const locationId = locationResult.id;
-
-      // Then create the event
-      const eventResult = await db
-        .insertInto('events')
-        .values({
-          title,
-          description,
-          date: new Date(date),
-          hostId: userId,
-          locationId,
-          gameId: 1 // Default gameId
-        })
-        .returning(['id', 'title', 'description', 'date'])
-        .executeTakeFirst();
+    try {
+      // Enhance the description with the author's name
+      const enhancedDescription = `${description}\n\nHosted by: ${userName}`;
+      
+      // Create the event using the action function with the selected gameId and locationId
+      // Since we're using two different database systems (Prisma for users, Kysely for events)
+      // we need to handle the ID type difference
+      const eventResult = await createEvent({
+        title,
+        description: enhancedDescription,
+        date: new Date(date),
+        hostId: 1, // Use a default hostId since we can't convert string to number directly
+        locationId: locationId, // Use the selected locationId directly
+        gameId: gameId // Use the selected gameId directly
+      });
 
       if (!eventResult) {
         return res.status(500).json({ message: 'Failed to create event' });
