@@ -18,17 +18,27 @@ export async function getLocation(lId: number): Promise<Location> {
 }
 
 export async function createLocation(location: Omit<Location, 'id'>): Promise<Location> {
-    const createdLocation = await db.transaction().execute(async (trx) => {
-        const locale = await trx
+    try {
+        // Simplified direct query
+        const result = await db
             .insertInto('location')
-            .columns(['address','latitude','latitude','longitude'])
-            .values({address: location.address, latitude: location.latitude, longitude: location.longitude})
+            .values({
+                address: location.address,
+                latitude: location.latitude,
+                longitude: location.longitude
+            })
             .returning(['id', 'address', 'latitude', 'longitude'])
-            .executeTakeFirstOrThrow();
-        return locale;
-    });
-
-    return createdLocation;
+            .executeTakeFirst();
+        
+        if (!result) {
+            throw new Error('Failed to create location');
+        }
+        
+        return result;
+    } catch (error) {
+        console.error('Error creating location:', error);
+        throw error;
+    }
 }
 
 export async function updateLocation(lId: number, update: Omit<Location, 'id'>): Promise<Location | undefined>{

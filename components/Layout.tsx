@@ -35,7 +35,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
         <Container maxW="container.xl">
           <Flex align="center" gap={4}>
             {/* Logo/Home */}
-            <Link href="/" passHref>
+            <Link href="/events" passHref>
               <ChakraLink fontSize="xl" fontWeight="bold" color="white" _hover={{ textDecoration: 'none', color: 'primary.100' }}>
                 EventHub
               </ChakraLink>
@@ -95,13 +95,17 @@ export default function Layout({ children }: { children: React.ReactNode }) {
                       Account
                     </MenuButton>
                     <MenuList>
-                      <MenuItem as={Link} href="/profile">
-                        Profile
-                      </MenuItem>
-                      <MenuItem as={Link} href="/favorites">
-                        My Favorites
-                      </MenuItem>
-                      <MenuItem onClick={() => signOut()}>
+                      <Link href="/profile" passHref style={{ textDecoration: 'none' }}>
+                        <MenuItem as="a">
+                          Profile
+                        </MenuItem>
+                      </Link>
+                      <Link href="/favorites" passHref style={{ textDecoration: 'none' }}>
+                        <MenuItem as="a">
+                          My Favorites
+                        </MenuItem>
+                      </Link>
+                      <MenuItem onClick={() => signOut({ callbackUrl: '/' })}>
                         Sign Out
                       </MenuItem>
                     </MenuList>
@@ -134,30 +138,36 @@ export default function Layout({ children }: { children: React.ReactNode }) {
       <Box bg="primary.700" py={2}>
         <Container maxW="container.xl">
           <Flex gap={6}>
-            <ChakraLink color="white" _hover={{ color: 'secondary.200' }} display="flex" alignItems="center" gap={2}>
-              <CalendarIcon />
-              All Events
-            </ChakraLink>
-            <ChakraLink color="white" _hover={{ color: 'secondary.200' }} display="flex" alignItems="center" gap={2}>
-              <TimeIcon />
-              Today's Events
-            </ChakraLink>
-            <ChakraLink color="white" _hover={{ color: 'secondary.200' }} display="flex" alignItems="center" gap={2}>
-              <StarIcon />
-              Popular
-            </ChakraLink>
-            <ChakraLink color="white" _hover={{ color: 'secondary.200' }} display="flex" alignItems="center" gap={2}>
-              <StarIcon />
-              Favorites
-            </ChakraLink>
-            <ChakraLink color="white" _hover={{ color: 'secondary.200' }} display="flex" alignItems="center" gap={2}>
-              <TimeIcon />
-              Near Me
-            </ChakraLink>
-            <ChakraLink color="white" _hover={{ color: 'secondary.200' }} display="flex" alignItems="center" gap={2}>
-              <CalendarIcon />
-              Categories
-            </ChakraLink>
+            <Link href="/events" passHref>
+              <ChakraLink color="white" _hover={{ color: 'secondary.200' }} display="flex" alignItems="center" gap={2}>
+                <CalendarIcon />
+                All Events
+              </ChakraLink>
+            </Link>
+            <Link href="/events/today" passHref>
+              <ChakraLink color="white" _hover={{ color: 'secondary.200' }} display="flex" alignItems="center" gap={2}>
+                <TimeIcon />
+                Today's Events
+              </ChakraLink>
+            </Link>
+            <Link href="/events/popular" passHref>
+              <ChakraLink color="white" _hover={{ color: 'secondary.200' }} display="flex" alignItems="center" gap={2}>
+                <StarIcon />
+                Popular
+              </ChakraLink>
+            </Link>
+            <Link href="/favorites" passHref>
+              <ChakraLink color="white" _hover={{ color: 'secondary.200' }} display="flex" alignItems="center" gap={2}>
+                <StarIcon />
+                Favorites
+              </ChakraLink>
+            </Link>
+            <Link href="/events/nearby" passHref>
+              <ChakraLink color="white" _hover={{ color: 'secondary.200' }} display="flex" alignItems="center" gap={2}>
+                <TimeIcon />
+                Near Me
+              </ChakraLink>
+            </Link>
           </Flex>
         </Container>
       </Box>

@@ -47,7 +47,7 @@ export async function getAllEvents(): Promise<EventDisplay[]> {
         .select(['id', 'firstName', 'lastName', 'username'])
         .execute();
     const games = await db
-        .selectFrom('games')
+        .selectFrom('game')
         .select(['id','title', 'description'])
         .execute();
     const locations = await db
@@ -56,9 +56,9 @@ export async function getAllEvents(): Promise<EventDisplay[]> {
         .execute();
     const allEvents: EventDisplay[] = [];
     for (const event of events) {
-        const locationAddy = locations.find(g => g.id === event.locationId);
-        const gameTitle = games.find(g => g.id === event.gameId);
-        const accountName = account.find(g => g.id === event.hostId);
+        const locationAddy = locations.find((g) => g.id === event.locationId);
+        const gameTitle = games.find((g) => g.id === event.gameId);
+        const accountName = account.find((g) => g.id === event.hostId);
         allEvents.push({
             ...event,
             author: accountName?.firstName + " " + accountName?.lastName,
@@ -81,7 +81,7 @@ export async function getOneEvent(eId: number): Promise<EventInfo> {
         .where('id', '=', events.hostId)
         .executeTakeFirstOrThrow();
     const games = await db
-        .selectFrom('games')
+        .selectFrom('game')
         .select(['id','title', 'description'])
         .where('id', '=', events.gameId)
         .executeTakeFirstOrThrow();
@@ -104,7 +104,7 @@ export async function createEvent(event: Omit<Event, 'id'>): Promise<Event> {
     const createdEvent = await db.transaction().execute(async (trx) => {
         const cEvent = await trx
             .insertInto('events')
-            .columns(['gameId', 'hostId', 'locationId', 'title', 'description'])
+            .columns(['gameId', 'hostId', 'locationId', 'title', 'description', 'date'])
             .values({gameId: event.gameId, hostId: event.hostId, locationId: event.locationId, 
                 title: event.title, description: event.description, date: event.date})
             .returning(['id', 'date', 'hostId', 'locationId', 'gameId', 'title', 'description'])

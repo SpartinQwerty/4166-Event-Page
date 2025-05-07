@@ -1,101 +1,95 @@
 import { NextApiRequest, NextApiResponse } from 'next';
 import { getSession } from 'next-auth/react';
-import { prisma } from '../../lib/prisma';
+import { createEvent, getAllEvents, getOneEvent, removeEvent } from '../../actions/events';
+import { getServerSession } from 'next-auth';
+import { authOptions } from './auth/[...nextauth]';
 
 export default async function handler(
   req: NextApiRequest,
   res: NextApiResponse
 ) {
-  const session = await getSession({ req });
+  const session = await getServerSession(req, res, authOptions);
 
-  if (!session?.user?.id) {
+  if (!session) {
     return res.status(401).json({ message: 'Unauthorized' });
   }
 
   switch (req.method) {
+    case 'GET':
+      return handleGet(req, res);
     case 'POST':
-      return handlePost(req, res, session.user.id);
-    case 'PUT':
-      return handlePut(req, res, session.user.id);
+      return handlePost(req, res, session);
     case 'DELETE':
-      return handleDelete(req, res, session.user.id);
+      return handleDelete(req, res, session);
     default:
       return res.status(405).json({ message: 'Method not allowed' });
+  }
+}
+
+async function handleGet(
+  req: NextApiRequest,
+  res: NextApiResponse
+) {
+  try {
+    const { id } = req.query;
+    
+    if (id && typeof id === 'string') {
+      // Get a single event
+      const event = await getOneEvent(parseInt(id));
+      return res.status(200).json(event);
+    } else {
+      // Get all events
+      const events = await getAllEvents();
+      return res.status(200).json(events);
+    }
+  } catch (error: any) {
+    return res.status(500).json({ message: error.message || 'An error occurred' });
   }
 }
 
 async function handlePost(
   req: NextApiRequest,
   res: NextApiResponse,
-  userId: string
+  session: any
 ) {
   try {
-    const { title, description, date, location } = req.body;
+    const { title, description, date, gameId, locationId } = req.body;
 
-    if (!title || !description || !date || !location) {
+    if (!title || !description || !date || !gameId || !locationId) {
       return res.status(400).json({ message: 'Missing required fields' });
     }
-
-    const event = await prisma.event.create({
-      data: {
-        title,
-        description,
-        date: new Date(date),
-        location,
-        userId,
-      },
+    
+    // Get user ID from session
+    const userEmail = session.user.email;
+    
+    // Get user account from email
+    const response = await fetch(`${process.env.NEXTAUTH_URL}/api/accounts?email=${userEmail}`);
+    const userData = await response.json();
+    
+    if (!userData || !userData.id) {
+      return res.status(404).json({ message: 'User account not found' });
+    }
+    
+    const event = await createEvent({
+      title,
+      description,
+      date: new Date(date),
+      gameId,
+      locationId,
+      hostId: userData.id,
     });
 
     return res.status(200).json(event);
   } catch (error: any) {
-    return res.status(500).json({ message: error.message });
-  }
-}
-
-async function handlePut(
-  req: NextApiRequest,
-  res: NextApiResponse,
-  userId: string
-) {
-  try {
-    const { id, title, description, date, location } = req.body;
-
-    if (!id || !title || !description || !date || !location) {
-      return res.status(400).json({ message: 'Missing required fields' });
-    }
-
-    const event = await prisma.event.findUnique({
-      where: { id },
-    });
-
-    if (!event) {
-      return res.status(404).json({ message: 'Event not found' });
-    }
-
-    if (event.userId !== userId) {
-      return res.status(403).json({ message: 'Not authorized to update this event' });
-    }
-
-    const updatedEvent = await prisma.event.update({
-      where: { id },
-      data: {
-        title,
-        description,
-        date: new Date(date),
-        location,
-      },
-    });
-
-    return res.status(200).json(updatedEvent);
-  } catch (error: any) {
-    return res.status(500).json({ message: error.message });
+    console.error('Error creating event:', error);
+    return res.status(500).json({ message: error.message || 'An error occurred while creating the event' });
   }
 }
 
 async function handleDelete(
   req: NextApiRequest,
   res: NextApiResponse,
-  userId: string
+  session: any
 ) {
   try {
     const { id } = req.query;
@@ -103,25 +97,34 @@ async function handleDelete(
     if (!id || typeof id !== 'string') {
       return res.status(400).json({ message: 'Missing event ID' });
     }
-
-    const event = await prisma.event.findUnique({
-      where: { id },
-    });
-
+    
+    // Get the event to check ownership
+    const event = await getOneEvent(parseInt(id));
+    
     if (!event) {
       return res.status(404).json({ message: 'Event not found' });
     }
-
-    if (event.userId !== userId) {
+    
+    // Get user ID from session
+    const userEmail = session.user.email;
+    
+    // Get user account from email
+    const response = await fetch(`${process.env.NEXTAUTH_URL}/api/accounts?email=${userEmail}`);
+    const userData = await response.json();
+    
+    if (!userData || !userData.id) {
+      return res.status(404).json({ message: 'User account not found' });
+    }
+    
+    // Check if user is the host of the event
+    if (event.author.id !== userData.id) {
       return res.status(403).json({ message: 'Not authorized to delete this event' });
     }
 
-    await prisma.event.delete({
-      where: { id },
-    });
+    await removeEvent(parseInt(id));
 
     return res.status(200).json({ message: 'Event deleted successfully' });
   } catch (error: any) {
-    return res.status(500).json({ message: error.message });
+    return res.status(500).json({ message: error.message || 'An error occurred while deleting the event' });
   }
 }
