@@ -28,6 +28,8 @@ export default async function handler(
 async function handleGetLocations(req: NextApiRequest, res: NextApiResponse) {
   try {
     const locations = await getAllLocations();
+    
+    console.log(`Returning ${locations.length} locations`);
     return res.status(200).json(locations);
   } catch (error: any) {
     console.error('Error fetching locations:', error);
@@ -41,19 +43,27 @@ async function handleGetLocations(req: NextApiRequest, res: NextApiResponse) {
 // POST - Create a new location
 async function handleCreateLocation(req: NextApiRequest, res: NextApiResponse) {
   try {
-    const { address, latitude, longitude } = req.body;
+    const { address } = req.body;
+    console.log('Received location data:', { address });
 
     if (!address) {
       return res.status(400).json({ message: 'Location address is required' });
     }
 
-    const location = await createLocation({
-      address,
-      latitude: parseFloat(latitude) || 0,
-      longitude: parseFloat(longitude) || 0
-    });
+    try {
+      const location = await createLocation({
+        address
+      });
 
-    return res.status(201).json(location);
+      console.log('Created location:', location);
+      return res.status(201).json(location);
+    } catch (error: any) {
+      console.error('Error creating location:', error);
+      return res.status(400).json({ 
+        message: 'Error creating location', 
+        error: error.message || 'Unknown error' 
+      });
+    }
   } catch (error: any) {
     console.error('Error creating location:', error);
     return res.status(500).json({ 

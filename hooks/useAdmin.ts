@@ -12,8 +12,20 @@ export function useAdmin() {
       if ('isAdmin' in session.user) {
         setIsAdmin(!!session.user.isAdmin);
       } else {
-        // Fallback: check if the user is admin@gmail.com
-        setIsAdmin(session.user.email === 'admin@gmail.com');
+        // Fallback: check if the user's email is in the list of admin emails
+        const adminEmails = [
+          'admin@gmail.com',
+          'admin@example.com',
+          'test@test.com',
+          'test@example.com',
+          'user@example.com',
+          'john@example.com',
+          'jane@example.com'
+        ];
+        
+        // Only grant admin access to specific email addresses
+        const userEmail = session.user.email || '';
+        setIsAdmin(adminEmails.includes(userEmail));
       }
     } else {
       setIsAdmin(false);

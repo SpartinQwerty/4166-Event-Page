@@ -1,10 +1,11 @@
-import { Box, Container, Heading, SimpleGrid, Text, Button, Flex, Badge, Icon, Divider } from '@chakra-ui/react';
+import { Box, Container, Heading, SimpleGrid, Text, Button, Flex, Badge, Link as ChakraLink, Divider, Icon } from '@chakra-ui/react';
 import { GetServerSideProps } from 'next';
 import Link from 'next/link';
 import { useSession } from 'next-auth/react';
 import { CalendarIcon, TimeIcon, InfoIcon } from '@chakra-ui/icons';
 import { EventDisplay } from '../../actions/events';
 import { getAllEvents } from '../../actions/events';
+import EventCard from '../../components/EventCard';
 
 interface EventsPageProps {
   events: EventDisplay[];
@@ -54,17 +55,16 @@ export default function EventsPage({ events }: EventsPageProps) {
         </Box>
         
         {session && (
-          <Link href="/events/create" passHref>
-            <Button 
-              as="a" 
-              colorScheme="primary"
-              size="lg"
-              className="btn-primary"
-              leftIcon={<Icon as={CalendarIcon} />}
-            >
-              Create New Event
-            </Button>
-          </Link>
+          <Button 
+            as="a" 
+            href="/events/create"
+            colorScheme="primary"
+            size="lg"
+            className="btn-primary"
+            leftIcon={<Icon as={CalendarIcon} />}
+          >
+            Create New Event
+          </Button>
         )}
       </Flex>
 
@@ -88,61 +88,16 @@ export default function EventsPage({ events }: EventsPageProps) {
       ) : (
         <SimpleGrid columns={{ base: 1, md: 2, lg: 3 }} spacing={6}>
           {events.map((event) => (
-            <Link href={`/events/${event.id}`} key={event.id}>
-              <Box
-                className="card hover:border-secondary-300 cursor-pointer"
-                _hover={{
-                  transform: 'translateY(-4px)',
-                  boxShadow: 'md',
-                }}
-                transition="all 0.3s ease"
-              >
-                <Flex justifyContent="space-between" alignItems="flex-start" mb={3}>
-                  <Heading size="md" className="text-primary-700 line-clamp-2">
-                    {event.title}
-                  </Heading>
-                  <Badge colorScheme="purple" p={1} borderRadius="md">
-                    {event.game}
-                  </Badge>
-                </Flex>
-                
-                <Text 
-                  className="text-gray-600 mb-4 line-clamp-3" 
-                  title={event.description}
-                >
-                  {event.description}
-                </Text>
-                
-                <Divider my={4} />
-                
-                <Flex justifyContent="space-between" alignItems="center" wrap="wrap" gap={2}>
-                  <Flex alignItems="center">
-                    <CalendarIcon className="text-secondary-500 mr-2" />
-                    <Text fontSize="sm" className="text-gray-700">
-                      {formatDate(event.date)}
-                    </Text>
-                  </Flex>
-                  
-                  <Flex alignItems="center">
-                    <TimeIcon className="text-secondary-500 mr-2" />
-                    <Text fontSize="sm" className="text-gray-700">
-                      {formatTime(event.date)}
-                    </Text>
-                  </Flex>
-                </Flex>
-                
-                <Flex alignItems="center" mt={3}>
-                  <InfoIcon className="text-primary-500 mr-2" />
-                  <Text fontSize="sm" className="text-gray-700 truncate" title={event.address || ''}>
-                    {event.address || 'Location not specified'}
-                  </Text>
-                </Flex>
-                
-                <Text fontSize="sm" className="text-gray-500 mt-3">
-                  Hosted by: {event.author}
-                </Text>
-              </Box>
-            </Link>
+            <EventCard
+              key={event.id}
+              id={event.id}
+              title={event.title}
+              description={event.description}
+              date={event.date}
+              game={event.game}
+              address={event.address}
+              author={event.author}
+            />
           ))}
         </SimpleGrid>
       )}

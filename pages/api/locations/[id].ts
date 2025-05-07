@@ -37,7 +37,9 @@ export default async function handler(
 // GET - Retrieve a specific location
 async function handleGetLocation(req: NextApiRequest, res: NextApiResponse, locationId: number) {
   try {
+    console.log(`Fetching location with ID: ${locationId}`);
     const location = await getLocation(locationId);
+    console.log('Location found:', location);
     return res.status(200).json(location);
   } catch (error: any) {
     console.error(`Error fetching location ${locationId}:`, error);
@@ -51,22 +53,22 @@ async function handleGetLocation(req: NextApiRequest, res: NextApiResponse, loca
 // PUT - Update a location
 async function handleUpdateLocation(req: NextApiRequest, res: NextApiResponse, locationId: number) {
   try {
-    const { address, latitude, longitude } = req.body;
+    const { address } = req.body;
+    console.log(`Updating location ${locationId} with:`, { address });
 
     if (!address) {
       return res.status(400).json({ message: 'Location address is required' });
     }
 
     const location = await updateLocation(locationId, {
-      address,
-      latitude: parseFloat(latitude) || 0,
-      longitude: parseFloat(longitude) || 0
+      address
     });
 
     if (!location) {
       return res.status(404).json({ message: 'Location not found' });
     }
 
+    console.log(`Updated location ${locationId}:`, location);
     return res.status(200).json(location);
   } catch (error: any) {
     console.error(`Error updating location ${locationId}:`, error);
@@ -80,8 +82,14 @@ async function handleUpdateLocation(req: NextApiRequest, res: NextApiResponse, l
 // DELETE - Delete a location
 async function handleDeleteLocation(req: NextApiRequest, res: NextApiResponse, locationId: number) {
   try {
-    const location = await deleteLocation(locationId);
-
+    console.log(`Deleting location with ID: ${locationId}`);
+    const deletedLocation = await deleteLocation(locationId);
+    
+    if (!deletedLocation) {
+      return res.status(404).json({ message: 'Location not found' });
+    }
+    
+    console.log('Location deleted successfully:', deletedLocation);
     return res.status(200).json({ message: 'Location deleted successfully' });
   } catch (error: any) {
     console.error(`Error deleting location ${locationId}:`, error);

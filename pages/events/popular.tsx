@@ -5,6 +5,7 @@ import { useSession } from 'next-auth/react';
 import { CalendarIcon, TimeIcon, InfoIcon, StarIcon } from '@chakra-ui/icons';
 import { EventDisplay } from '../../actions/events';
 import { getAllEvents } from '../../actions/events';
+import EventCard from '../../components/EventCard';
 
 interface PopularEventsPageProps {
   events: EventDisplay[];
@@ -92,82 +93,36 @@ export default function PopularEventsPage({ events }: PopularEventsPageProps) {
       ) : (
         <SimpleGrid columns={{ base: 1, md: 2, lg: 3 }} spacing={6}>
           {events.map((event, index) => (
-            <Link href={`/events/${event.id}`} key={event.id}>
-              <Box
-                className="card hover:border-secondary-300 cursor-pointer"
-                _hover={{
-                  transform: 'translateY(-4px)',
-                  boxShadow: 'md',
-                }}
-                transition="all 0.3s ease"
-                position="relative"
-                overflow="hidden"
-              >
-                {index < 3 && (
-                  <Box 
-                    position="absolute" 
-                    top="0" 
-                    right="0" 
-                    bg="secondary.500" 
-                    color="white" 
-                    px={3} 
-                    py={1}
-                    borderBottomLeftRadius="md"
-                    className="flex items-center"
-                  >
-                    <StarIcon mr={1} boxSize={3} />
-                    <Text fontSize="xs" fontWeight="bold">
-                      {index === 0 ? 'Top Event' : index === 1 ? '2nd Popular' : '3rd Popular'}
-                    </Text>
-                  </Box>
-                )}
-                
-                <Flex justifyContent="space-between" alignItems="flex-start" mb={3}>
-                  <Heading size="md" className="text-primary-700 line-clamp-2">
-                    {event.title}
-                  </Heading>
-                  <Badge colorScheme="purple" p={1} borderRadius="md">
-                    {event.game}
-                  </Badge>
-                </Flex>
-                
-                <Text 
-                  className="text-gray-600 mb-4 line-clamp-3" 
-                  title={event.description}
+            <Box key={event.id} position="relative" overflow="hidden">
+              {index < 3 && (
+                <Box 
+                  position="absolute" 
+                  top="0" 
+                  right="0" 
+                  bg="secondary.500" 
+                  color="white" 
+                  px={3} 
+                  py={1}
+                  borderBottomLeftRadius="md"
+                  className="flex items-center"
+                  zIndex="1"
                 >
-                  {event.description}
-                </Text>
-                
-                <Divider my={4} />
-                
-                <Flex justifyContent="space-between" alignItems="center" wrap="wrap" gap={2}>
-                  <Flex alignItems="center">
-                    <CalendarIcon className="text-secondary-500 mr-2" />
-                    <Text fontSize="sm" className="text-gray-700">
-                      {formatDate(event.date)}
-                    </Text>
-                  </Flex>
-                  
-                  <Flex alignItems="center">
-                    <TimeIcon className="text-secondary-500 mr-2" />
-                    <Text fontSize="sm" className="text-gray-700">
-                      {formatTime(event.date)}
-                    </Text>
-                  </Flex>
-                </Flex>
-                
-                <Flex alignItems="center" mt={3}>
-                  <InfoIcon className="text-primary-500 mr-2" />
-                  <Text fontSize="sm" className="text-gray-700 truncate" title={event.address || ''}>
-                    {event.address || 'Location not specified'}
+                  <StarIcon mr={1} boxSize={3} />
+                  <Text fontSize="xs" fontWeight="bold">
+                    {index === 0 ? 'Top Event' : index === 1 ? '2nd Popular' : '3rd Popular'}
                   </Text>
-                </Flex>
-                
-                <Text fontSize="sm" className="text-gray-500 mt-3">
-                  Hosted by: {event.author}
-                </Text>
-              </Box>
-            </Link>
+                </Box>
+              )}
+              <EventCard
+                id={event.id}
+                title={event.title}
+                description={event.description}
+                date={event.date}
+                game={event.game}
+                address={event.address}
+                author={event.author}
+              />
+            </Box>
           ))}
         </SimpleGrid>
       )}

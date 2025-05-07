@@ -7,8 +7,22 @@ export default async function handler(
         res: NextApiResponse<Account |Account[] | {message: string}| Omit<Account, "password">>) {
     if (req.method === 'GET') {
         try {
-            const {id} = req.body;
-            if (!id ) {
+            const { id } = req.body;
+            const { email } = req.query;
+            
+            if (email && typeof email === 'string') {
+                // Find account by email (username)
+                const accounts = await getAllAccounts();
+                const account = accounts.find(acc => acc.username === email);
+                
+                if (!account) {
+                    return res.status(404).json({ message: 'Account not found' });
+                }
+                
+                // Return account without password
+                const { password, ...accountWithoutPassword } = account;
+                return res.status(200).json(accountWithoutPassword);
+            } else if (!id) {
                 const accounts = await getAllAccounts();
                 res.status(200).json(accounts);
             } else {

@@ -87,7 +87,7 @@ export async function getOneEvent(eId: number): Promise<EventInfo> {
         .executeTakeFirstOrThrow();
     const locations = await db
         .selectFrom('location')
-        .select(['id', 'address', 'latitude', 'longitude'])
+        .select(['id', 'address'])
         .where('id', '=', events.locationId)
         .executeTakeFirstOrThrow();
 
@@ -101,17 +101,45 @@ export async function getOneEvent(eId: number): Promise<EventInfo> {
 }
 
 export async function createEvent(event: Omit<Event, 'id'>): Promise<Event> {
-    const createdEvent = await db.transaction().execute(async (trx) => {
-        const cEvent = await trx
-            .insertInto('events')
-            .columns(['gameId', 'hostId', 'locationId', 'title', 'description', 'date'])
-            .values({gameId: event.gameId, hostId: event.hostId, locationId: event.locationId, 
-                title: event.title, description: event.description, date: event.date})
-            .returning(['id', 'date', 'hostId', 'locationId', 'gameId', 'title', 'description'])
-            .executeTakeFirstOrThrow();
-        return cEvent;
-    })
-    return createdEvent;
+    console.log('Creating event with data:', {
+        gameId: event.gameId, 
+        hostId: event.hostId, 
+        locationId: event.locationId,
+        title: event.title, 
+        description: event.description, 
+        date: event.date,
+        gameIdType: typeof event.gameId,
+        hostIdType: typeof event.hostId,
+        locationIdType: typeof event.locationId
+    });
+    
+    try {
+        const createdEvent = await db.transaction().execute(async (trx) => {
+            try {
+                const cEvent = await trx
+                    .insertInto('events')
+                    .columns(['gameId', 'hostId', 'locationId', 'title', 'description', 'date'])
+                    .values({
+                        gameId: Number(event.gameId), 
+                        hostId: Number(event.hostId), 
+                        locationId: Number(event.locationId), 
+                        title: event.title, 
+                        description: event.description, 
+                        date: event.date
+                    })
+                    .returning(['id', 'date', 'hostId', 'locationId', 'gameId', 'title', 'description'])
+                    .executeTakeFirstOrThrow();
+                return cEvent;
+            } catch (innerError) {
+                console.error('Error in transaction:', innerError);
+                throw innerError;
+            }
+        });
+        return createdEvent;
+    } catch (error) {
+        console.error('Error creating event:', error);
+        throw error;
+    }
 }
 
 export async function removeEvent(eId: number): Promise<Event> {

@@ -56,6 +56,18 @@ export default function GamesPage({ initialGames }: GamesPageProps) {
   // Debug information
   console.log('Games admin page - Session:', session);
   console.log('Games admin page - isAdmin:', isAdmin);
+  console.log('Initial games data:', initialGames);
+  
+  // Load games data when component mounts
+  useEffect(() => {
+    if (initialGames && initialGames.length > 0) {
+      console.log('Setting games from initialGames:', initialGames);
+      setGames(initialGames);
+    } else {
+      console.log('No initial games data, fetching from API');
+      refreshGames();
+    }
+  }, []);
   
   // Refresh games list
   const refreshGames = async () => {
@@ -66,7 +78,10 @@ export default function GamesPage({ initialGames }: GamesPageProps) {
       }
       
       const data = await response.json();
-      setGames(data);
+      // Ensure games is an array
+      const gamesArray = Array.isArray(data) ? data : data.games || [];
+      console.log('Refreshed games data:', gamesArray);
+      setGames(gamesArray);
     } catch (error) {
       console.error('Error fetching games:', error);
       toast({
@@ -330,8 +345,13 @@ export const getServerSideProps: GetServerSideProps = async (context) => {
   
   try {
     // Fetch games from API
-    const response = await fetch(`${process.env.NEXTAUTH_URL || 'http://localhost:3000'}/api/games`);
-    const games = await response.json();
+    const baseUrl = process.env.NEXTAUTH_URL || 'http://localhost:3001';
+    console.log('Fetching games from:', `${baseUrl}/api/games`);
+    const response = await fetch(`${baseUrl}/api/games`);
+    const data = await response.json();
+    
+    // Ensure games is an array
+    const games = Array.isArray(data) ? data : data.games || [];
     
     return {
       props: {

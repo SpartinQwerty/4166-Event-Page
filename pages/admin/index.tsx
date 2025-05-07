@@ -131,24 +131,16 @@ export default function AdminDashboard() {
             className="hover:border-secondary-300 cursor-pointer"
             _hover={{
               transform: 'translateY(-4px)',
-              boxShadow: 'md',
+              transition: 'transform 0.2s',
+              boxShadow: 'lg',
             }}
-            transition="all 0.3s ease"
+            onClick={() => router.push('/admin/events')}
           >
-            <Link href="/events" passHref>
-              <Flex direction="column" alignItems="center" textAlign="center">
-                <Icon as={CalendarIcon} boxSize={12} className="text-primary-500 mb-4" />
-                <Heading size="md" className="text-primary-700 mb-2">
-                  Events Management
-                </Heading>
-                <Text className="text-gray-600 mb-4">
-                  View and manage all events on the platform
-                </Text>
-                <Button colorScheme="primary" size="sm">
-                  Manage Events
-                </Button>
-              </Flex>
-            </Link>
+            <Flex direction="column" align="center" justify="center" textAlign="center">
+              <Icon as={CalendarIcon} w={10} h={10} color="red.500" mb={4} />
+              <Heading as="h3" size="md" mb={2}>Manage Events</Heading>
+              <Text>View, edit, or delete events on the platform.</Text>
+            </Flex>
           </Box>
         </SimpleGrid>
       </Box>

@@ -4,14 +4,12 @@ import { db } from "../lib/db/db"
 export type Location = {
     id: number;
     address: string;
-    latitude: number;
-    longitude: number;
 }
 
 export async function getLocation(lId: number): Promise<Location> {
     const location = await db
         .selectFrom('location')
-        .select(['id', 'address', 'latitude', 'longitude'])
+        .select(['id', 'address'])
         .where('id', '=', lId)
         .executeTakeFirstOrThrow();
     return location;
@@ -20,56 +18,46 @@ export async function getLocation(lId: number): Promise<Location> {
 export async function getAllLocations(): Promise<Location[]> {
     const locations = await db
         .selectFrom('location')
-        .select(['id', 'address', 'latitude', 'longitude'])
+        .select(['id', 'address'])
         .execute();
     return locations;
 }
 
 export async function createLocation(location: Omit<Location, 'id'>): Promise<Location> {
-    try {
-        // Simplified direct query
-        const result = await db
+    const createdLocation = await db.transaction().execute(async (trx) => {
+        const result = await trx
             .insertInto('location')
-            .values({
-                address: location.address,
-                latitude: location.latitude,
-                longitude: location.longitude
-            })
-            .returning(['id', 'address', 'latitude', 'longitude'])
-            .executeTakeFirst();
-        
-        if (!result) {
-            throw new Error('Failed to create location');
-        }
-        
+            .columns(['address'])
+            .values({address: location.address})
+            .returning(['id', 'address'])
+            .executeTakeFirstOrThrow();
         return result;
-    } catch (error) {
-        console.error('Error creating location:', error);
-        throw error;
-    }
+    });
+    
+    return createdLocation;
 }
 
 export async function updateLocation(lId: number, update: Omit<Location, 'id'>): Promise<Location | undefined>{
     const updatedLocation = await db.transaction().execute(async (trx) => {
-        const locale = await trx
+        const location = await trx
             .updateTable('location')
-            .set({address: update.address, latitude: update.latitude, longitude: update.longitude})
+            .set({address: update.address})
             .where('id', '=', lId)
-            .returning(['id','address','latitude','longitude'])
+            .returning(['id','address'])
             .executeTakeFirst();
-        return locale;
+        return location;
     });
     return updatedLocation;
 }
 
-export async function deleteLocation(lId:number): Promise<Location> {
+export async function deleteLocation(lId:number): Promise<Location | undefined> {
     const deletedLocation = await db.transaction().execute(async (trx) => {
-        const locale = await trx
+        const location = await trx
             .deleteFrom('location')
             .where('id', '=', lId)
-            .returning(['id','address','latitude','longitude'])
-            .executeTakeFirstOrThrow();
-        return locale;
+            .returning(['id','address'])
+            .executeTakeFirst();
+        return location;
     });
     return deletedLocation;
 }

@@ -33,7 +33,7 @@ export default function CreateEvent() {
   
   const router = useRouter();
   const toast = useToast();
-  const { data: session } = useSession();
+  const { data: session, status } = useSession();
 
   // Fetch games and locations when component mounts
   useEffect(() => {
@@ -64,8 +64,22 @@ export default function CreateEvent() {
     fetchOptions();
   }, [toast]);
 
-  if (!session) {
-    router.push('/auth/signin');
+  useEffect(() => {
+    if (status === 'unauthenticated') {
+      router.push('/auth/signin');
+    }
+  }, [status, router]);
+  
+  if (status === 'loading') {
+    return (
+      <Container centerContent py={10}>
+        <Spinner size="xl" />
+        <Text mt={4}>Loading...</Text>
+      </Container>
+    );
+  }
+  
+  if (status === 'unauthenticated') {
     return null;
   }
 
@@ -113,11 +127,27 @@ export default function CreateEvent() {
       });
 
       if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.message);
+        // Try to parse as JSON, but handle case where response is not JSON
+        let errorMessage = 'Failed to create event';
+        try {
+          const errorData = await response.json();
+          errorMessage = errorData.message || errorMessage;
+        } catch (parseError) {
+          // If response is not JSON (e.g., HTML error page)
+          console.error('Error parsing response:', parseError);
+          errorMessage = `Server error (${response.status}): ${response.statusText}`;
+        }
+        throw new Error(errorMessage);
       }
-
-      const data = await response.json();
+      
+      // Parse the successful response
+      let data;
+      try {
+        data = await response.json();
+      } catch (parseError) {
+        console.error('Error parsing success response:', parseError);
+        throw new Error('Received invalid response from server');
+      }
 
       toast({
         title: 'Success',

@@ -38,7 +38,9 @@ interface LocationsPageProps {
 export default function LocationsPage({ initialLocations }: LocationsPageProps) {
   const [locations, setLocations] = useState<Location[]>(initialLocations);
   const [isLoading, setIsLoading] = useState(false);
-  const [currentLocation, setCurrentLocation] = useState<Partial<Location>>({});
+  const [currentLocation, setCurrentLocation] = useState<Partial<Location>>({
+    address: ''
+  });
   const [isEditing, setIsEditing] = useState(false);
   
   const { isOpen, onOpen, onClose } = useDisclosure();
@@ -55,17 +57,33 @@ export default function LocationsPage({ initialLocations }: LocationsPageProps) 
   // Debug information
   console.log('Locations admin page - Session:', session);
   console.log('Locations admin page - isAdmin:', isAdmin);
+  console.log('Initial locations data:', initialLocations);
+  
+  // Load locations data when component mounts
+  useEffect(() => {
+    if (initialLocations && initialLocations.length > 0) {
+      console.log('Setting locations from initialLocations:', initialLocations);
+      setLocations(initialLocations);
+    } else {
+      console.log('No initial locations data, fetching from API');
+      refreshLocations();
+    }
+  }, [initialLocations]);
   
   // Refresh locations list
   const refreshLocations = async () => {
     try {
+      console.log('Fetching locations from API');
       const response = await fetch('/api/locations');
       if (!response.ok) {
         throw new Error('Failed to fetch locations');
       }
       
       const data = await response.json();
-      setLocations(data);
+      // Ensure locations is an array
+      const locationsArray = Array.isArray(data) ? data : data.locations || [];
+      console.log('Refreshed locations data:', locationsArray);
+      setLocations(locationsArray);
     } catch (error) {
       console.error('Error fetching locations:', error);
       toast({
@@ -92,35 +110,56 @@ export default function LocationsPage({ initialLocations }: LocationsPageProps) 
   
   // Handle form submission
   const handleSubmit = async () => {
-    if (!currentLocation.address) {
-      toast({
-        title: 'Error',
-        description: 'Location address is required',
-        status: 'error',
-        duration: 3000,
-        isClosable: true,
-      });
-      return;
-    }
-    
-    setIsLoading(true);
-    
     try {
-      const url = isEditing ? `/api/locations/${currentLocation.id}` : '/api/locations';
-      const method = isEditing ? 'PUT' : 'POST';
+      setIsLoading(true);
       
-      const response = await fetch(url, {
-        method,
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(currentLocation),
-      });
-      
-      if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.message || 'Failed to save location');
+      // Validate required fields
+      if (!currentLocation.address) {
+        toast({
+          title: 'Error',
+          description: 'Address is required',
+          status: 'error',
+          duration: 3000,
+          isClosable: true,
+        });
+        setIsLoading(false);
+        return;
       }
+      
+      // Format data for API call
+      const locationData = {
+        address: currentLocation.address
+      };
+      
+      let response;
+      
+      if (isEditing && currentLocation.id) {
+        // Update existing location
+        response = await fetch(`/api/locations/${currentLocation.id}`, {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(locationData),
+        });
+      } else {
+        // Create new location
+        response = await fetch('/api/locations', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(locationData),
+        });
+      }
+      if (!response.ok) {
+        const errorData = await response.json();
+        console.error('API error response:', errorData);
+        throw new Error(errorData.message || 'Failed to save location');
+      }
+      
+      const result = await response.json();
+      console.log('API success response:', result);
       
       await refreshLocations();
       onClose();
@@ -133,9 +172,10 @@ export default function LocationsPage({ initialLocations }: LocationsPageProps) 
         isClosable: true,
       });
     } catch (error: any) {
+      console.error('Error in handleSubmit:', error);
       toast({
         title: 'Error',
-        description: error.message,
+        description: error.message || 'An unexpected error occurred',
         status: 'error',
         duration: 3000,
         isClosable: true,
@@ -232,8 +272,6 @@ export default function LocationsPage({ initialLocations }: LocationsPageProps) 
               <Tr>
                 <Th>ID</Th>
                 <Th>Address</Th>
-                <Th>Latitude</Th>
-                <Th>Longitude</Th>
                 <Th>Actions</Th>
               </Tr>
             </Thead>
@@ -242,8 +280,6 @@ export default function LocationsPage({ initialLocations }: LocationsPageProps) 
                 <Tr key={location.id}>
                   <Td>{location.id}</Td>
                   <Td>{location.address}</Td>
-                  <Td>{location.latitude}</Td>
-                  <Td>{location.longitude}</Td>
                   <Td>
                     <Flex gap={2}>
                       <Button 
@@ -287,28 +323,6 @@ export default function LocationsPage({ initialLocations }: LocationsPageProps) 
                 placeholder="Enter location address"
               />
             </FormControl>
-            
-            <FormControl mb={4}>
-              <FormLabel>Latitude</FormLabel>
-              <Input 
-                type="number"
-                step="0.000001"
-                value={currentLocation.latitude || ''}
-                onChange={(e) => setCurrentLocation({...currentLocation, latitude: parseFloat(e.target.value)})}
-                placeholder="Enter latitude (e.g., 35.2271)"
-              />
-            </FormControl>
-            
-            <FormControl mb={4}>
-              <FormLabel>Longitude</FormLabel>
-              <Input 
-                type="number"
-                step="0.000001"
-                value={currentLocation.longitude || ''}
-                onChange={(e) => setCurrentLocation({...currentLocation, longitude: parseFloat(e.target.value)})}
-                placeholder="Enter longitude (e.g., -80.8431)"
-              />
-            </FormControl>
           </ModalBody>
           
           <ModalFooter>
@@ -343,8 +357,14 @@ export const getServerSideProps: GetServerSideProps = async (context) => {
   
   try {
     // Fetch locations from API
-    const response = await fetch(`${process.env.NEXTAUTH_URL || 'http://localhost:3000'}/api/locations`);
-    const locations = await response.json();
+    const baseUrl = process.env.NEXTAUTH_URL || 'http://localhost:3001';
+    console.log('Fetching locations from:', `${baseUrl}/api/locations`);
+    const response = await fetch(`${baseUrl}/api/locations`);
+    const data = await response.json();
+    
+    // Ensure locations is an array
+    const locations = Array.isArray(data) ? data : data.locations || [];
+    console.log('Locations data structure:', locations);
     
     return {
       props: {

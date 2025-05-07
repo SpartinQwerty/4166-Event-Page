@@ -8,21 +8,30 @@ export default async function handler(
   req: NextApiRequest,
   res: NextApiResponse
 ) {
-  const session = await getServerSession(req, res, authOptions);
-
-  if (!session) {
-    return res.status(401).json({ message: 'Unauthorized' });
+  // Allow public access for GET requests
+  if (req.method === 'GET') {
+    return handleGet(req, res);
   }
+  
+  // Require authentication for all other methods
+  try {
+    const session = await getServerSession(req, res, authOptions);
 
-  switch (req.method) {
-    case 'GET':
-      return handleGet(req, res);
-    case 'POST':
-      return handlePost(req, res, session);
-    case 'DELETE':
-      return handleDelete(req, res, session);
-    default:
-      return res.status(405).json({ message: 'Method not allowed' });
+    if (!session) {
+      return res.status(401).json({ message: 'Unauthorized' });
+    }
+    
+    switch (req.method) {
+      case 'POST':
+        return handlePost(req, res, session);
+      case 'DELETE':
+        return handleDelete(req, res, session);
+      default:
+        return res.status(405).json({ message: 'Method not allowed' });
+    }
+  } catch (error) {
+    console.error('Authentication error:', error);
+    return res.status(401).json({ message: 'Authentication failed' });
   }
 }
 
@@ -116,8 +125,12 @@ async function handleDelete(
       return res.status(404).json({ message: 'User account not found' });
     }
     
-    // Check if user is the host of the event
-    if (event.author.id !== userData.id) {
+    // Check if user is an admin
+    const isAdmin = session.user.isAdmin || session.user.email === 'admin@gmail.com';
+    console.log('Delete request from user:', userEmail, 'isAdmin:', isAdmin);
+    
+    // Check if user is the host of the event or an admin
+    if (event.author.id !== userData.id && !isAdmin) {
       return res.status(403).json({ message: 'Not authorized to delete this event' });
     }
 

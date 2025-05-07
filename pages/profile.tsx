@@ -23,11 +23,13 @@ import {
 import { GetServerSideProps } from 'next';
 import Link from 'next/link';
 import { useSession, getSession, signOut } from 'next-auth/react';
+import { useRouter } from 'next/router';
 import { CalendarIcon, TimeIcon, InfoIcon, EditIcon } from '@chakra-ui/icons';
+import EventCard from '../components/EventCard';
 import { EventDisplay } from '../actions/events';
 import { getAllEvents } from '../actions/events';
-import { useRouter } from 'next/router';
 import { useState, useEffect } from 'react';
+import { db } from '../lib/db/db';
 
 interface ProfilePageProps {
   hostedEvents: EventDisplay[];
@@ -35,7 +37,7 @@ interface ProfilePageProps {
 }
 
 export default function ProfilePage({ hostedEvents, joinedEvents }: ProfilePageProps) {
-  const { data: session } = useSession();
+  const { data: session, status } = useSession();
   const router = useRouter();
   const toast = useToast();
   
@@ -51,9 +53,9 @@ export default function ProfilePage({ hostedEvents, joinedEvents }: ProfilePageP
   
   // Redirect to login if not authenticated
   useEffect(() => {
-    if (!session) {
+    if (status === 'unauthenticated') {
       router.push('/auth/signin');
-    } else if (session.user) {
+    } else if (status === 'authenticated' && session?.user) {
       // Initialize form with user data
       const nameParts = session.user.name?.split(' ') || ['', ''];
       setFirstName(nameParts[0] || '');
@@ -348,57 +350,16 @@ export default function ProfilePage({ hostedEvents, joinedEvents }: ProfilePageP
             ) : (
               <SimpleGrid columns={{ base: 1, md: 2, lg: 3 }} spacing={6} mt={4}>
                 {hostedEvents.map((event) => (
-                  <Link href={`/events/${event.id}`} key={event.id}>
-                    <Box
-                      className="card hover:border-secondary-300 cursor-pointer"
-                      _hover={{
-                        transform: 'translateY(-4px)',
-                        boxShadow: 'md',
-                      }}
-                      transition="all 0.3s ease"
-                    >
-                      <Flex justifyContent="space-between" alignItems="flex-start" mb={3}>
-                        <Heading size="md" className="text-primary-700 line-clamp-2">
-                          {event.title}
-                        </Heading>
-                        <Badge colorScheme="purple" p={1} borderRadius="md">
-                          {event.game}
-                        </Badge>
-                      </Flex>
-                      
-                      <Text 
-                        className="text-gray-600 mb-4 line-clamp-3" 
-                        title={event.description}
-                      >
-                        {event.description}
-                      </Text>
-                      
-                      <Divider my={4} />
-                      
-                      <Flex justifyContent="space-between" alignItems="center" wrap="wrap" gap={2}>
-                        <Flex alignItems="center">
-                          <CalendarIcon className="text-secondary-500 mr-2" />
-                          <Text fontSize="sm" className="text-gray-700">
-                            {formatDate(event.date)}
-                          </Text>
-                        </Flex>
-                        
-                        <Flex alignItems="center">
-                          <TimeIcon className="text-secondary-500 mr-2" />
-                          <Text fontSize="sm" className="text-gray-700">
-                            {formatTime(event.date)}
-                          </Text>
-                        </Flex>
-                      </Flex>
-                      
-                      <Flex alignItems="center" mt={3}>
-                        <InfoIcon className="text-primary-500 mr-2" />
-                        <Text fontSize="sm" className="text-gray-700 truncate" title={event.address || ''}>
-                          {event.address || 'Location not specified'}
-                        </Text>
-                      </Flex>
-                    </Box>
-                  </Link>
+                  <EventCard
+                    key={event.id}
+                    id={event.id}
+                    title={event.title}
+                    description={event.description}
+                    date={event.date}
+                    game={event.game}
+                    address={event.address}
+                    author={event.author}
+                  />
                 ))}
               </SimpleGrid>
             )}
@@ -485,6 +446,8 @@ export default function ProfilePage({ hostedEvents, joinedEvents }: ProfilePageP
 export const getServerSideProps: GetServerSideProps = async (context) => {
   const session = await getSession(context);
   
+  console.log('Session in getServerSideProps:', JSON.stringify(session, null, 2));
+  
   if (!session) {
     return {
       redirect: {
@@ -497,11 +460,67 @@ export const getServerSideProps: GetServerSideProps = async (context) => {
   try {
     const allEvents = await getAllEvents();
     
-    // For demonstration purposes, we'll just split the events
-    // In a real app, you would query the database for events hosted by the user
-    // and events the user has joined
-    const hostedEvents = allEvents.slice(0, 2);
-    const joinedEvents = allEvents.slice(2, 4);
+    // Get the user's ID from the session
+    const userEmail = session.user?.email;
+    
+    console.log('User email from session:', userEmail);
+    
+    // Instead of using the API, query the database directly to get the account ID
+    // This ensures we're using the same ID type as stored in the events table
+    const accounts = await db
+      .selectFrom('accounts')
+      .select(['id', 'username'])
+      .where('username', '=', userEmail || '')
+      .execute();
+    
+    console.log('Accounts found:', accounts);
+    
+    if (!accounts || accounts.length === 0) {
+      console.error('User account not found');
+      throw new Error('User account not found');
+    }
+    
+    const userId = accounts[0].id;
+    console.log('User ID from database:', userId);
+    
+    // Log all events and their hostIds
+    console.log('All events:', allEvents.map(event => ({ id: event.id, title: event.title, hostId: event.hostId })));
+    
+    // Get all accounts to find the one matching the user's email
+    const allAccounts = await db
+      .selectFrom('accounts')
+      .selectAll()
+      .execute();
+      
+    console.log('All accounts:', allAccounts);
+    
+    // Find the account with the matching email
+    const userAccount = allAccounts.find(account => account.username === userEmail);
+    
+    console.log('User account found:', userAccount);
+    
+    let hostedEvents: EventDisplay[] = [];
+    let joinedEvents: EventDisplay[] = [];
+    
+    if (userAccount) {
+      // Filter events hosted by the user
+      hostedEvents = allEvents.filter(event => {
+        console.log(`Comparing event hostId ${event.hostId} with account ID ${userAccount.id}`);
+        // Convert both to numbers for comparison
+        return Number(event.hostId) === Number(userAccount.id);
+      });
+      
+      // For joined events, we would normally query a participants table
+      // Since we don't have that yet, we'll show all events the user didn't host
+      joinedEvents = allEvents.filter(event => Number(event.hostId) !== Number(userAccount.id));
+    } else {
+      // If no account is found, show all events as joined events
+      console.log('No user account found, showing all events as joined events');
+      joinedEvents = allEvents;
+    }
+    
+    console.log('Hosted events:', hostedEvents.length);
+    console.log('Joined events:', joinedEvents.length);
 
     return {
       props: {

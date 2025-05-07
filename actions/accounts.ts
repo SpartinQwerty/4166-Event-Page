@@ -21,23 +21,44 @@ export async function getAllAccounts(): Promise<Account[]> {
 export async function getAccount(id: number): Promise<Account> {
     const account = await db
         .selectFrom('accounts')
-        .select(['id', 'username', 'password', 'firstName', 'lastName'])
+        .select(['id', 'username', 'password', 'firstName', 'lastName', 'email'])
         .where('id', '=', id)
         .executeTakeFirstOrThrow();
     return account;
 }
 
 export async function createAccount(user: string, pass: string, fName: string, lName: string): Promise<Account> {
-    const createdAccount = await db.transaction().execute(async (trx) => {
-        const account = await trx
-            .insertInto('accounts')
-            .columns(['username','password', 'firstName','lastName'])
-            .values({username: user, password: pass, firstName: fName, lastName: lName})
-            .returning(['id', 'username','password', 'firstName','lastName'])
-            .executeTakeFirstOrThrow();
-        return account;
-    });
-    return createdAccount;
+    console.log('Creating account with data:', { username: user, firstName: fName, lastName: lName });
+    
+    try {
+        const createdAccount = await db.transaction().execute(async (trx) => {
+            try {
+                // Include email field with the same value as username
+                const account = await trx
+                    .insertInto('accounts')
+                    .columns(['username', 'password', 'firstName', 'lastName', 'email'])
+                    .values({
+                        username: user, 
+                        password: pass, 
+                        firstName: fName, 
+                        lastName: lName,
+                        email: user // Use username as email
+                    })
+                    .returning(['id', 'username', 'password', 'firstName', 'lastName', 'email'])
+                    .executeTakeFirstOrThrow();
+                
+                console.log('Account created successfully:', account);
+                return account;
+            } catch (innerError) {
+                console.error('Error in account creation transaction:', innerError);
+                throw innerError;
+            }
+        });
+        return createdAccount;
+    } catch (error) {
+        console.error('Error creating account:', error);
+        throw error;
+    }
 }
 
 export async function deleteAccount(aId: number): Promise<Account> {

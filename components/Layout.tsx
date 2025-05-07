@@ -41,11 +41,16 @@ export default function Layout({ children }: { children: React.ReactNode }) {
         <Container maxW="container.xl">
           <Flex align="center" gap={4}>
             {/* Logo/Home */}
-            <Link href="/events" passHref>
-              <ChakraLink fontSize="xl" fontWeight="bold" color="white" _hover={{ textDecoration: 'none', color: 'primary.100' }}>
-                EventHub
-              </ChakraLink>
-            </Link>
+            <ChakraLink 
+              as="a"
+              href="/"
+              fontSize="xl" 
+              fontWeight="bold" 
+              color="white" 
+              _hover={{ textDecoration: 'none', color: 'primary.100' }}
+            >
+              EventHub
+            </ChakraLink>
 
             {/* Search Bar */}
             <Flex flex={1} mx={4}>
@@ -85,24 +90,27 @@ export default function Layout({ children }: { children: React.ReactNode }) {
             <Flex gap={4} align="center">
               {session ? (
                 <>
-                  <Link href="/events/create" passHref>
-                    <ChakraLink color="white" _hover={{ color: 'secondary.200' }}>
-                      Create Event
-                    </ChakraLink>
-                  </Link>
+                  <ChakraLink 
+                    as="a"
+                    href="/events/create"
+                    color="white" 
+                    _hover={{ color: 'secondary.200' }}
+                  >
+                    Create Event
+                  </ChakraLink>
                   
                   {/* Admin Button - Only visible to admin users */}
                   {isAdmin && (
-                    <Link href="/admin" passHref>
-                      <Button
-                        colorScheme="red"
-                        size="sm"
-                        leftIcon={<Icon as={StarIcon} />}
-                        _hover={{ bg: 'red.600' }}
-                      >
-                        Admin
-                      </Button>
-                    </Link>
+                    <Button
+                      as="a"
+                      href="/admin"
+                      colorScheme="red"
+                      size="sm"
+                      leftIcon={<Icon as={StarIcon} />}
+                      _hover={{ bg: 'red.600' }}
+                    >
+                      Admin
+                    </Button>
                   )}
                   <Menu>
                     <MenuButton
@@ -115,19 +123,15 @@ export default function Layout({ children }: { children: React.ReactNode }) {
                       Account
                     </MenuButton>
                     <MenuList>
-                      <Link href="/profile" passHref style={{ textDecoration: 'none' }}>
-                        <MenuItem as="a">
-                          Profile
-                        </MenuItem>
-                      </Link>
-                      <Link href="/favorites" passHref style={{ textDecoration: 'none' }}>
-                        <MenuItem as="a">
-                          My Favorites
-                        </MenuItem>
-                      </Link>
+                      <MenuItem as="a" href="/profile">
+                        Profile
+                      </MenuItem>
+                      <MenuItem as="a" href="/favorites">
+                        My Favorites
+                      </MenuItem>
                       <MenuItem onClick={() => {
                         signOut({ 
-                          callbackUrl: '/events',
+                          callbackUrl: '/',
                           redirect: true
                         });
                       }}>
@@ -138,20 +142,23 @@ export default function Layout({ children }: { children: React.ReactNode }) {
                 </>
               ) : (
                 <>
-                  <Link href="/auth/signin" passHref>
-                    <ChakraLink color="white" _hover={{ color: 'secondary.200' }}>
-                      Sign In
-                    </ChakraLink>
-                  </Link>
-                  <Link href="/auth/signup" passHref>
-                    <Button
-                      colorScheme="secondary"
-                      size="sm"
-                      _hover={{ bg: 'secondary.600' }}
-                    >
-                      Sign Up
-                    </Button>
-                  </Link>
+                  <ChakraLink 
+                    as="a"
+                    href="/auth/signin"
+                    color="white" 
+                    _hover={{ color: 'secondary.200' }}
+                  >
+                    Sign In
+                  </ChakraLink>
+                  <Button
+                    as="a"
+                    href="/auth/signup"
+                    colorScheme="secondary"
+                    size="sm"
+                    _hover={{ bg: 'secondary.600' }}
+                  >
+                    Sign Up
+                  </Button>
                 </>
               )}
             </Flex>
@@ -163,32 +170,62 @@ export default function Layout({ children }: { children: React.ReactNode }) {
       <Box bg="primary.700" py={2}>
         <Container maxW="container.xl">
           <Flex gap={6}>
-            <Link href="/events" passHref>
-              <ChakraLink color="white" _hover={{ color: 'secondary.200' }} display="flex" alignItems="center" gap={2}>
+            <Link href="/events" legacyBehavior>
+              <ChakraLink 
+                color="white" 
+                _hover={{ color: 'secondary.200' }} 
+                display="flex" 
+                alignItems="center" 
+                gap={2}
+              >
                 <CalendarIcon />
                 All Events
               </ChakraLink>
             </Link>
-            <Link href="/events/today" passHref>
-              <ChakraLink color="white" _hover={{ color: 'secondary.200' }} display="flex" alignItems="center" gap={2}>
+            <Link href="/events/today" legacyBehavior>
+              <ChakraLink 
+                color="white" 
+                _hover={{ color: 'secondary.200' }} 
+                display="flex" 
+                alignItems="center" 
+                gap={2}
+              >
                 <TimeIcon />
                 Today's Events
               </ChakraLink>
             </Link>
-            <Link href="/events/popular" passHref>
-              <ChakraLink color="white" _hover={{ color: 'secondary.200' }} display="flex" alignItems="center" gap={2}>
+            <Link href="/events/popular" legacyBehavior>
+              <ChakraLink 
+                color="white" 
+                _hover={{ color: 'secondary.200' }} 
+                display="flex" 
+                alignItems="center" 
+                gap={2}
+              >
                 <StarIcon />
                 Popular
               </ChakraLink>
             </Link>
-            <Link href="/favorites" passHref>
-              <ChakraLink color="white" _hover={{ color: 'secondary.200' }} display="flex" alignItems="center" gap={2}>
+            <Link href="/favorites" legacyBehavior>
+              <ChakraLink 
+                color="white" 
+                _hover={{ color: 'secondary.200' }} 
+                display="flex" 
+                alignItems="center" 
+                gap={2}
+              >
                 <StarIcon />
                 Favorites
               </ChakraLink>
             </Link>
-            <Link href="/events/nearby" passHref>
-              <ChakraLink color="white" _hover={{ color: 'secondary.200' }} display="flex" alignItems="center" gap={2}>
+            <Link href="/events/nearby" legacyBehavior>
+              <ChakraLink 
+                color="white" 
+                _hover={{ color: 'secondary.200' }} 
+                display="flex" 
+                alignItems="center" 
+                gap={2}
+              >
                 <TimeIcon />
                 Near Me
               </ChakraLink>

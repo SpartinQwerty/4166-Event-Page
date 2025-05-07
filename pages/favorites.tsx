@@ -1,31 +1,68 @@
-import { Box, Container, Heading, SimpleGrid, Text, Button, Flex, Badge, Icon, Divider, useToast } from '@chakra-ui/react';
+import { Box, Container, Heading, SimpleGrid, Text, Button, Flex, Badge, Icon, Divider, useToast, Spinner } from '@chakra-ui/react';
 import { GetServerSideProps } from 'next';
 import Link from 'next/link';
 import { useSession, getSession } from 'next-auth/react';
 import { CalendarIcon, TimeIcon, InfoIcon, StarIcon } from '@chakra-ui/icons';
-import { EventDisplay } from '../actions/events';
-import { getAllEvents } from '../actions/events';
 import { useRouter } from 'next/router';
+import EventCard from '../components/EventCard';
 import { useState, useEffect } from 'react';
 
-interface FavoritesPageProps {
-  events: EventDisplay[];
+interface FavoriteEvent {
+  favoriteId: number;
+  eventId: number;
+  userId: number;
+  createdAt: string;
+  title: string;
+  description: string;
+  date: string;
+  location: string;
+  hostId: number;
+  hostUsername: string;
+  hostFirstName: string;
+  hostLastName: string;
 }
 
-export default function FavoritesPage({ events: initialEvents }: FavoritesPageProps) {
-  const { data: session } = useSession();
+export default function FavoritesPage() {
+  const { data: session, status } = useSession();
   const router = useRouter();
   const toast = useToast();
-  const [favoriteEvents, setFavoriteEvents] = useState<EventDisplay[]>(initialEvents);
+  const [favoriteEvents, setFavoriteEvents] = useState<FavoriteEvent[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
   
-  // Redirect to login if not authenticated
+  // Redirect to login if not authenticated and fetch favorites if authenticated
   useEffect(() => {
-    if (!session) {
+    if (status === 'unauthenticated') {
       router.push('/auth/signin');
+    } else if (status === 'authenticated') {
+      fetchFavorites();
     }
-  }, [session, router]);
+  }, [status, router]);
+  
+  // Fetch user's favorite events
+  const fetchFavorites = async () => {
+    setIsLoading(true);
+    try {
+      const response = await fetch('/api/favorites');
+      if (!response.ok) {
+        throw new Error('Failed to fetch favorites');
+      }
+      const data = await response.json();
+      setFavoriteEvents(data.favorites);
+    } catch (error) {
+      console.error('Error fetching favorites:', error);
+      toast({
+        title: 'Error',
+        description: 'Failed to load favorite events',
+        status: 'error',
+        duration: 3000,
+        isClosable: true,
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
-  const formatDate = (date: Date) => {
+  const formatDate = (date: string) => {
     return new Date(date).toLocaleDateString('en-US', {
       month: 'short',
       day: 'numeric',
@@ -33,25 +70,43 @@ export default function FavoritesPage({ events: initialEvents }: FavoritesPagePr
     });
   };
 
-  const formatTime = (date: Date) => {
+  const formatTime = (date: string) => {
     return new Date(date).toLocaleTimeString('en-US', {
       hour: '2-digit',
       minute: '2-digit'
     });
   };
 
-  const removeFromFavorites = (eventId: number) => {
-    // In a real application, this would call an API to remove from favorites
-    // For now, we'll just filter it out of the local state
-    setFavoriteEvents(favoriteEvents.filter(event => event.id !== eventId));
-    
-    toast({
-      title: 'Removed from favorites',
-      description: 'Event has been removed from your favorites',
-      status: 'success',
-      duration: 3000,
-      isClosable: true,
-    });
+  const removeFromFavorites = async (eventId: number) => {
+    try {
+      const response = await fetch(`/api/favorites?eventId=${eventId}`, {
+        method: 'DELETE',
+      });
+      
+      if (!response.ok) {
+        throw new Error('Failed to remove from favorites');
+      }
+      
+      // Update the UI by removing the event from the local state
+      setFavoriteEvents(favoriteEvents.filter(event => event.eventId !== eventId));
+      
+      toast({
+        title: 'Removed from favorites',
+        description: 'Event has been removed from your favorites',
+        status: 'success',
+        duration: 3000,
+        isClosable: true,
+      });
+    } catch (error) {
+      console.error('Error removing from favorites:', error);
+      toast({
+        title: 'Error',
+        description: 'Failed to remove from favorites',
+        status: 'error',
+        duration: 3000,
+        isClosable: true,
+      });
+    }
   };
   
   if (!session) {
@@ -115,81 +170,30 @@ export default function FavoritesPage({ events: initialEvents }: FavoritesPagePr
       ) : (
         <SimpleGrid columns={{ base: 1, md: 2, lg: 3 }} spacing={6}>
           {favoriteEvents.map((event) => (
-            <Box
-              key={event.id}
-              className="card hover:border-secondary-300 cursor-pointer"
-              _hover={{
-                transform: 'translateY(-4px)',
-                boxShadow: 'md',
-              }}
-              transition="all 0.3s ease"
-              position="relative"
-            >
+            <Box key={event.favoriteId} position="relative">
               <Button
                 position="absolute"
                 top={2}
                 right={2}
                 size="sm"
+                variant="solid"
                 colorScheme="red"
-                variant="ghost"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  removeFromFavorites(event.id);
-                }}
+                onClick={() => removeFromFavorites(event.eventId)}
+                aria-label="Remove from favorites"
                 zIndex={1}
-                title="Remove from favorites"
+                borderRadius="full"
               >
-                <StarIcon color="secondary.500" />
+                <StarIcon />
               </Button>
-              
-              <Link href={`/events/${event.id}`}>
-                <Box>
-                  <Flex justifyContent="space-between" alignItems="flex-start" mb={3}>
-                    <Heading size="md" className="text-primary-700 line-clamp-2">
-                      {event.title}
-                    </Heading>
-                    <Badge colorScheme="purple" p={1} borderRadius="md">
-                      {event.game}
-                    </Badge>
-                  </Flex>
-                  
-                  <Text 
-                    className="text-gray-600 mb-4 line-clamp-3" 
-                    title={event.description}
-                  >
-                    {event.description}
-                  </Text>
-                  
-                  <Divider my={4} />
-                  
-                  <Flex justifyContent="space-between" alignItems="center" wrap="wrap" gap={2}>
-                    <Flex alignItems="center">
-                      <CalendarIcon className="text-secondary-500 mr-2" />
-                      <Text fontSize="sm" className="text-gray-700">
-                        {formatDate(event.date)}
-                      </Text>
-                    </Flex>
-                    
-                    <Flex alignItems="center">
-                      <TimeIcon className="text-secondary-500 mr-2" />
-                      <Text fontSize="sm" className="text-gray-700">
-                        {formatTime(event.date)}
-                      </Text>
-                    </Flex>
-                  </Flex>
-                  
-                  <Flex alignItems="center" mt={3}>
-                    <InfoIcon className="text-primary-500 mr-2" />
-                    <Text fontSize="sm" className="text-gray-700 truncate" title={event.address || ''}>
-                      {event.address || 'Location not specified'}
-                    </Text>
-                  </Flex>
-                  
-                  <Text fontSize="sm" className="text-gray-500 mt-3">
-                    Hosted by: {event.author}
-                  </Text>
-                </Box>
-              </Link>
+              <EventCard
+                id={event.eventId}
+                title={event.title}
+                description={event.description}
+                date={event.date}
+                address={event.location}
+                author={`${event.hostFirstName} ${event.hostLastName}`}
+                game="Gaming Event"
+              />
             </Box>
           ))}
         </SimpleGrid>

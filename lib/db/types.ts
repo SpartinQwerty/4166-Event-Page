@@ -5,6 +5,8 @@ export type Database = {
     events: EventType;
     game: GameType;
     location: LocationType;
+    participants: ParticipantType;
+    favorites: FavoriteType;
 }
 
 export type AccountType = {
@@ -13,6 +15,7 @@ export type AccountType = {
     password: string;
     firstName: string;
     lastName: string;
+    email: string;
 }
 
 export type EventType = {
@@ -34,6 +37,18 @@ export type GameType = {
 export type LocationType = {
     id: Generated<number>;
     address: string;
-    latitude: number;
-    longitude: number;
+}
+
+export type ParticipantType = {
+    id: Generated<number>;
+    eventId: number;
+    userId: number;
+    joinedAt: Date;
+}
+
+export type FavoriteType = {
+    id: Generated<number>;
+    eventId: number;
+    userId: number;
+    createdAt: Date;
 }
