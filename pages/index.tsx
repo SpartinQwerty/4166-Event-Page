@@ -1,8 +1,8 @@
 import { Box, Container, Heading, SimpleGrid, Text, Button } from '@chakra-ui/react';
 import { GetServerSideProps } from 'next';
 import { prisma } from '../lib/prisma';
-import { Event } from '@prisma/client';
 import Link from 'next/link';
+import {Event} from '../actions/events'
 import { useSession } from 'next-auth/react';
 import { db } from '../lib/db/db';
 
