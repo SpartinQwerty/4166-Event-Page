@@ -15,11 +15,12 @@ export async function up(db: Kysely<any>): Promise<void> {
       
       // Get database connection details from the Kysely instance
       const pool = new Pool({
-        database: 'ttrpg',
-        host: 'localhost',
-        user: 'postgres',
-        password: 'postgres',
-        port: 5432
+        database: process.env.DB_NAME,
+        host: process.env.DB_HOST,
+        user: process.env.DB_USER,
+        password: process.env.DB_PASS, 
+        port: Number(process.env.DB_PORT),
+        max: 10
       });
     }
       
