@@ -18,10 +18,8 @@ export default async function handler(
             if (!address || !latitude || !longitude) {
                 res.status(400).json({message: 'missing parameters for location'});
             }
-            const location: Omit<Location, 'id'> = {
+            const location: Omit<Location, 'id'|'latitude'|'longitude'> = {
                 address: address,
-                latitude: latitude,
-                longitude: longitude,
             }
             const locale = await createLocation(location);
             res.status(200).json(locale);
@@ -45,10 +43,8 @@ export default async function handler(
             if (!id) {
                 res.status(400).json({message: 'missing id to update'})
             }
-            const location: Omit<Location, 'id'> = {
+            const location: Omit<Location, 'id'|'latitude'|'longitude'> = {
                 address: address,
-                latitude: latitude,
-                longitude: longitude
             }
             const locale = await updateLocation(id, location);
             res.status(200).json({locale});
