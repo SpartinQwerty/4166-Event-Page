@@ -1,10 +1,9 @@
-import {NextRequest, NextResponse} from "next/server";
 import { Account, createAccount, deleteAccount, getAccount, getAllAccounts, updateAccountInfo, updateAccountPass } from "../../actions/accounts";
 import { NextApiRequest, NextApiResponse } from "next";
 
 export default async function handler(
         req: NextApiRequest, 
-        res: NextApiResponse<Account |Account[] | {message: string}| Omit<Account, "password">>) {
+        res: NextApiResponse) {
     if (req.method === 'GET') {
         try {
             const {id} = req.body;
